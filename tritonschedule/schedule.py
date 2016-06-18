@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 
 class Schedule:
     courses = []
@@ -51,6 +50,16 @@ class Schedule:
         :param self: the schedule object
         :param newTerm: the term code to check
         :returns: True if the given term is valid, False otherwise
+        """
+        pass
+
+    def getScheduleURL(self):
+        """
+        Creates a URL that searches for the specified courses at the given term
+        using the UCSD Schedule of Classes.
+
+        :param self: the schedule object
+        :returns: the URL as a string if successful, empty string otherwise
         """
         pass
 
