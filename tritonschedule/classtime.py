@@ -10,13 +10,15 @@ class ClassTime:
     startTime = 0
     finishTime = (11 * SECONDS_HOUR) + (59 * SECONDS_MIN)
 
-    def setDays(self, newDays):
+    @classmethod
+    def fromString(myClass, date):
         """
-        Sets which days this time occurs on. The days available are (M)onday,
-        (Tu)esday, (W)ednesday, (Th)ursday, and (F)riday.
+        Creates a ClassTime object given a string that is in the format of
+        weekday followed by a start time, a dash, and a finish time.
 
-        :param self: the ClassTime object
-        :param newDays: which days this class occurs on
+        :param myClass: the ClassTime class
+        :param date: the string representation of the ClassTime
+        :returns: a corresponding ClassTime object
         """
         pass
 
@@ -30,7 +32,8 @@ class ClassTime:
         :param newStart: the date/time string for when the class starts
         :param newFinish: the date/time string for when the class finishes
         """
-        self.setStart(newStart, newFinish)
+        self.setStart(newStart)
+        self.setFinish(newFinish)
 
     def setStart(self, newStart):
         """
@@ -57,8 +60,9 @@ class ClassTime:
 
         :param self: the ClassTime object
         :param other: the other ClassTime object to compare with
+        :returns: whether or not there is any time overlap (if any days match)
         """
-        pass
+        return False
 
     def isOnDay(self, day):
         """
@@ -67,8 +71,9 @@ class ClassTime:
 
         :param self: the ClassTime object
         :param day: a day of the week
+        :returns: whether or not the ClassTime occurs on the given day
         """
-        pass
+        return False
 
     def isTimeBefore(self, other):
         """
@@ -77,8 +82,9 @@ class ClassTime:
 
         :param self: the ClassTime object
         :param other: the other ClassTime object to compare with
+        :returns: whether or not this ClassTime occurs before
         """
-        pass
+        return False
 
     def isTimeAfter(self, other):
         """
@@ -87,5 +93,21 @@ class ClassTime:
 
         :param self: the ClassTime object
         :param other: the other ClassTime object to compare with
+        :returns: whether or not this ClassTime occurs after
         """
-        pass
+        return False
+
+    def toString(self):
+        """
+        Returns the string representation of the ClassTime object by combining
+        the days and the dash separated start and finish times. This
+        representation is the same as the input for the ClassTime.fromString
+        function.
+
+        :param self: the ClassTime object
+        :returns: the string representation
+        """
+        return ""
+
+    def __str__(self):
+        return self.toString()
