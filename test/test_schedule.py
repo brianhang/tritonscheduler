@@ -12,33 +12,45 @@ class ScheduleTest(unittest.TestCase):
         self.schedule = Schedule();
 
     def testValidateTerm(self):
-        self.assertTrue(self.schedule.validateTerm("FA15"))
-        self.assertTrue(self.schedule.validateTerm("WI99"))
-        self.assertTrue(self.schedule.validateTerm("SP00"))
-        self.assertTrue(self.schedule.validateTerm("SU16"))
-        self.assertTrue(self.schedule.validateTerm("S115"))
-        self.assertTrue(self.schedule.validateTerm("S227"))
-        self.assertTrue(self.schedule.validateTerm("SA01"))
+        self.assertTrue(Schedule.validateTerm("FA15"))
+        self.assertTrue(Schedule.validateTerm("WI99"))
+        self.assertTrue(Schedule.validateTerm("SP00"))
+        self.assertTrue(Schedule.validateTerm("SU16"))
+        self.assertTrue(Schedule.validateTerm("S115"))
+        self.assertTrue(Schedule.validateTerm("S227"))
+        self.assertTrue(Schedule.validateTerm("SA01"))
         
-        self.assertFalse(self.schedule.validateTerm(""))
-        self.assertFalse(self.schedule.validateTerm("FA"))
-        self.assertFalse(self.schedule.validateTerm("16"))
-        self.assertFalse(self.schedule.validateTerm("FA 16"))
-        self.assertFalse(self.schedule.validateTerm("FA1 6"))
-        self.assertFalse(self.schedule.validateTerm("FB00"))
-        self.assertFalse(self.schedule.validateTerm("XY16"))
+        self.assertFalse(Schedule.validateTerm(""))
+        self.assertFalse(Schedule.validateTerm("FA"))
+        self.assertFalse(Schedule.validateTerm("16"))
+        self.assertFalse(Schedule.validateTerm("FA 16"))
+        self.assertFalse(Schedule.validateTerm("FA1 6"))
+        self.assertFalse(Schedule.validateTerm("FB00"))
+        self.assertFalse(Schedule.validateTerm("XY16"))
 
     def testTerm(self):
         self.assertTrue(self.schedule.setTerm("FA15"))
-        self.assertEqual(self.schedule.getTerm(), "FA15")
+        self.assertEqual(self.schedule.term, "FA15")
 
         self.assertFalse(self.schedule.setTerm("_"))
 
-    def testCourse(self):
-        self.assertEqual(len(self.schedule.getCourses()), 0)
+    def testGetScheduleURL(self):
+        self.schedule.courses = []
+        self.schedule.term = "FA16"
 
-        self.schedule.addCourse("CSE 11")
-        self.assertEqual(len(self.schedule.getCourses()), 1)
+        self.assertEqual(self.schedule.getScheduleURL(), "")
+
+        self.schedule.courses = ["CSE 30"]
+        self.assertEqual(self.schedule.getScheduleURL(),
+                         "https://act.ucsd.edu/scheduleOfClasses/scheduleOf" \
+                         "ClassesFacultyResult.htm?selectedTerm=FA16&courses=" \
+                         "CSE+30")
+
+        self.schedule.courses.append("CSE 12")
+        self.assertEqual(self.schedule.getScheduleURL(),
+                         "https://act.ucsd.edu/scheduleOfClasses/scheduleOf" \
+                         "ClassesFacultyResult.htm?selectedTerm=FA16&courses=" \
+                         "CSE+30%0D%0ACSE+12")
 
 if __name__ == "__main__":
     unittest.main()
