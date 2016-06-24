@@ -3,7 +3,7 @@
 import re
 
 BASE_URL = "https://act.ucsd.edu/scheduleOfClasses/scheduleOfClassesFaculty" \
-           "Result.htm"
+           "ResultPrint.htm?tabNum=tabs-crs"
 TERM_REGEX = "([A-Z][0-9A-Z])(\d\d)"
 NEW_LINE = "%0D%0A"
 VALID_TERMS = set(["FA", "WI", "SU", "SP", "SA", "S3", "S2", "S1"])
@@ -58,7 +58,7 @@ class Schedule(object):
         if len(self.courses) == 0:
             return ""
 
-        return (BASE_URL + "?selectedTerm=" + self.term + "&courses=" +
+        return (BASE_URL + "&selectedTerm=" + self.term + "&courses=" +
                 NEW_LINE.join(self.courses).replace(" ", "+"))
 
     def retrieve(self):
