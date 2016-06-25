@@ -52,5 +52,26 @@ class ScheduleTest(unittest.TestCase):
                          "ClassesFacultyResult.htm?selectedTerm=FA16&courses=" \
                          "CSE+30%0D%0ACSE+12")
 
+    def testRetrieve(self):
+        self.schedule.courses = ["CSE 30"]
+        self.schedule.term = "FA16"
+
+        result = self.schedule.retrieve()
+
+        self.assertEqual(len(result), 1)
+        self.assertEqual(len(result["CSE 30"]), 2)
+        
+        self.schedule.courses = ["CSE 12", "DOC 1", "CSE 15L"]
+
+        result = self.schedule.retrieve()
+
+        self.assertEqual(len(result), 3)
+        self.assertEqual(len(result["CSE 12"]), 3)
+        self.assertEqual(len(result["CSE 15L"]), 4)
+        self.assertEqual(len(result["DOC 1"]), 3)
+
+        self.assertEqual(len(result["CSE 12"][0].DI), 3)
+        self.assertEqual(len(result["CSE 12"][1].LA), 1)
+
 if __name__ == "__main__":
     unittest.main()

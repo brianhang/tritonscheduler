@@ -3,8 +3,12 @@
 import re
 
 BASE_URL = "https://act.ucsd.edu/scheduleOfClasses/scheduleOfClassesFaculty" \
-           "ResultPrint.htm?tabNum=tabs-crs"
-TERM_REGEX = "([A-Z][0-9A-Z])(\d\d)"
+           "Result.htm?tabNum=tabs-crs&"
+BASE_URL_PRINT = "https://act.ucsd.edu/scheduleOfClasses/scheduleOfClasses" \
+                  "FacultyResultPrint.htm?"
+
+REGEX_TERM = "([A-Z][0-9A-Z])(\d\d)"
+
 NEW_LINE = "%0D%0A"
 VALID_TERMS = set(["FA", "WI", "SU", "SP", "SA", "S3", "S2", "S1"])
 
@@ -39,27 +43,29 @@ class Schedule(object):
         :returns: True if the given term is valid, False otherwise
         """
         newTerm = newTerm.upper()
-        match = re.match(TERM_REGEX, newTerm)
+        match = re.match(REGEX_TERM, newTerm)
 
         if not match:
             return False
 
         return (match.group(1) in VALID_TERMS)
 
-    def getScheduleURL(self):
+    def getScheduleURL(self, forPrinting):
         """
         Creates a URL that searches for the specified courses at the given term
         using the UCSD Schedule of Classes. This will return an empty string if
         the list of desired courses is empty.
 
         :param self: the schedule object
+        :param forPrinting: whether or not the print URL is needed
         :returns: the URL as a string if successful, empty string otherwise
         """
         if len(self.courses) == 0:
             return ""
 
-        return (BASE_URL + "&selectedTerm=" + self.term + "&courses=" +
-                NEW_LINE.join(self.courses).replace(" ", "+"))
+        return ((BASE_URL_PRINT if forPrinting else BASE_URL)
+                + "selectedTerm=" + self.term
+                + "&courses=" + NEW_LINE.join(self.courses).replace(" ", "+"))
 
     def retrieve(self):
         """

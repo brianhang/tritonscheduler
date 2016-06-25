@@ -1,8 +1,9 @@
 #/usr/bin/env python
 
-QUERY_RESULT = "//tr[@class=\"sectxt\" or @class=\"nonenrtxt\"]|//h2"
+QUERY_RESULT = '//tr[@class="sectxt" or @class="nonenrtxt"]|//h2|' \
+               '//tr[.//td[@class="crsheader"]]'
 
-REGEX_CODE = "(\([A-Z][A-Z][A-Z]*[A-Z]*\)[\s+])"
+REGEX_CODE = "\(([A-Z][A-Z][A-Z]*[A-Z]*)\s+\)"
 
 INDEX_ID = 1
 INDEX_TYPE = 2
@@ -13,81 +14,113 @@ INDEX_BUILDING = 6
 INDEX_ROOM = 7
 INDEX_INSTR = 8
 
+LEN_HEADER = 4
+LEN_MEETING = 9
+
+HEADER_NUM = 1
+
 from lxml import html
+from schedule import Schedule
+
+import re
 import requests
 
+class ParserError(Exception):
+    pass
+
 class Parser:
-    def load(self, url):
+    def __init__(self, schedule):
+        self.schedule = schedule
+
+    def load(self):
         """
         Creates a tree from the HTML contents from the given URL.
 
         :param self: the parser object
-        :param url: where the HTML content is located
+        :param schedule: the schedule to get the schedule URL from
+        :raises: ParserError
         """
-        result = requests.get(url)
+        if type(self.schedule) is not Schedule:
+            raise ParserError("invalid type for schedule")
+
+        session = requests.Session()
+        session.get(self.schedule.getScheduleURL(False))
+
+        result = session.get(self.schedule.getScheduleURL(True))
 
         # Raise an exception if the request failed.
         result.raise_for_status()
 
         tree = html.fromstring(result.content)
-        self.elements = tree.xpath(RESULT_QUERY)
+        self.elements = tree.xpath(QUERY_RESULT)
 
-    def parse():
+    def parse(self):
         """
         Takes the tree from the given URL and finds the lectures, sections, and
         final times.
 
         :param self: the parser object
+        :raises: ParserError
         :returns: the list of lectures and sections found
         """
         schedule = {}
         course = None
+        courseCode = ""
+        courseNum = 0
+
+        if type(self.schedule) is not Schedule:
+            raise ParserError("invalid type for schedule")
 
         for element in self.elements:
             if element.tag == "h2":
-                match = re.match(REGEX_CODE, element.text_content())
+                match = re.search(REGEX_CODE, element.text_content())
 
                 # Change the current course if a header for it was encountered.
                 if match:
-                    course = match.group(1)
-            else if course is not None:
-                # Otherwise, add a meeting to the last course.
-                if not schedule[course]:
+                    courseCode = match.group(1)
+            elif (element.tag == "tr" and len(element) == LEN_HEADER and
+                  courseCode):
+                # Set the course number if it was found in the course header.
+                course = (courseCode + " "
+                          + element[HEADER_NUM].text_content().strip())
+            elif course is not None and len(element) == LEN_MEETING:
+                # Add a meeting if one was found and a course has been set.
+                if course not in schedule:
                     schedule[course] = {}
 
                 # Get the parts of the meeting.
-                sectionID = element[INDEX_ID].text_content().trim()
-                meetingType = element[INDEX_TYPE].text_content().trim()
-                section = element[INDEX_SECTION].text_content().trim()
-                days = element[INDEX_DAYS].text_content().trim()
-                times = element[INDEX_TIMES].text_content().trim()
-                building = element[INDEX_BUILDING].text_content().trim()
-                room = element[INDEX_BUILDING].text_content().trim()
-                instructor = element[INDEX_INSTR].text_content().trim()
+                sectionID = element[INDEX_ID].text_content().strip()
+                meetingType = element[INDEX_TYPE].text_content().strip()
+                section = element[INDEX_SECTION].text_content().strip()
+                days = element[INDEX_DAYS].text_content().strip()
+                times = element[INDEX_TIMES].text_content().strip()
+                building = element[INDEX_BUILDING].text_content().strip()
+                room = element[INDEX_BUILDING].text_content().strip()
+                instructor = element[INDEX_INSTR].text_content().strip()
 
                 # If the meeting is a final, add it in a special format.
                 if meetingType == "FI":
-                    schedule[course].FI = {
-                        date = section,
-                        day = days,
-                        times = times,
-                        building = building,
-                        room = room
+                    schedule[course]["FI"] = {
+                        "date": section,
+                        "day": days,
+                        "times": times,
+                        "building": building,
+                        "room": room
                     }    
 
                     continue
 
                 # Otherwise, add the meeting normally.
-                if not schedule[course][meetingType]:
+                if meetingType not in schedule[course]:
                     schedule[course][meetingType] = []
 
                 schedule[course][meetingType].append({
-                    sectionID = sectionID,
-                    days = days,
-                    times = times,
-                    building = building,
-                    room = room,
-                    instructor = instructor
+                    "sectionID": sectionID,
+                    "days": days,
+                    "times": times,
+                    "building": building,
+                    "room": room,
+                    "instructor": instructor
                 })
 
         return schedule
