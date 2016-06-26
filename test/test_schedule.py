@@ -5,7 +5,9 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import unittest
+
 from tritonschedule.schedule import Schedule
+from tritonschedule.schedule import ScheduleError
 
 class ScheduleTest(unittest.TestCase):
     def setUp(self):
@@ -28,32 +30,39 @@ class ScheduleTest(unittest.TestCase):
         self.assertFalse(Schedule.validateTerm("FB00"))
         self.assertFalse(Schedule.validateTerm("XY16"))
 
-    def testTerm(self):
-        self.assertTrue(self.schedule.setTerm("FA15"))
-        self.assertEqual(self.schedule.term, "FA15")
-
-        self.assertFalse(self.schedule.setTerm("_"))
-
     def testGetScheduleURL(self):
-        self.schedule.courses = []
-        self.schedule.term = "FA16"
+        self.schedule.courses = None
+        self.schedule.term = None
 
-        self.assertEqual(self.schedule.getScheduleURL(), "")
+        self.assertRaises(ScheduleError, self.schedule.getScheduleURL)
+
+        self.schedule.courses = []
+        self.assertRaises(ScheduleError, self.schedule.getScheduleURL)
+
+        self.schedule.courses = None
+        self.schedule.term = "FA16"
+        self.assertRaises(ScheduleError, self.schedule.getScheduleURL)
 
         self.schedule.courses = ["CSE 30"]
         self.assertEqual(self.schedule.getScheduleURL(),
                          "https://act.ucsd.edu/scheduleOfClasses/scheduleOf" \
-                         "ClassesFacultyResult.htm?selectedTerm=FA16&courses=" \
-                         "CSE+30")
+                         "ClassesFacultyResult.htm?tabNum=tabs-crs&selected" \
+                         "Term=FA16&courses=CSE+30")
 
         self.schedule.courses.append("CSE 12")
         self.assertEqual(self.schedule.getScheduleURL(),
                          "https://act.ucsd.edu/scheduleOfClasses/scheduleOf" \
-                         "ClassesFacultyResult.htm?selectedTerm=FA16&courses=" \
-                         "CSE+30%0D%0ACSE+12")
+                         "ClassesFacultyResult.htm?tabNum=tabs-crs&selected" \
+                         "Term=FA16&courses=CSE+30%0D%0ACSE+12")
 
     def testRetrieve(self):
+        self.schedule.courses = None
+        self.schedule.term = None
+        self.assertRaises(ScheduleError, self.schedule.retrieve)
+
         self.schedule.courses = ["CSE 30"]
+        self.assertRaises(ScheduleError, self.schedule.retrieve)
+
         self.schedule.term = "FA16"
 
         result = self.schedule.retrieve()
@@ -67,11 +76,11 @@ class ScheduleTest(unittest.TestCase):
 
         self.assertEqual(len(result), 3)
         self.assertEqual(len(result["CSE 12"]), 3)
-        self.assertEqual(len(result["CSE 15L"]), 4)
+        self.assertEqual(len(result["CSE 15L"]), 3)
         self.assertEqual(len(result["DOC 1"]), 3)
 
-        self.assertEqual(len(result["CSE 12"][0].DI), 3)
-        self.assertEqual(len(result["CSE 12"][1].LA), 1)
+        self.assertEqual(len(result["CSE 12"][0]["DI"]), 1)
+        self.assertEqual(len(result["CSE 12"][1]["DI"]), 1)
 
 if __name__ == "__main__":
     unittest.main()

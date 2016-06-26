@@ -20,43 +20,27 @@ LEN_MEETING = 9
 HEADER_NUM = 1
 
 from lxml import html
-from schedule import Schedule
 
 import re
-import requests
 
 class ParserError(Exception):
     pass
 
 class Parser:
-    def __init__(self, schedule):
-        self.schedule = schedule
-
-    def load(self):
+    def load(self, data):
         """
-        Creates a tree from the HTML contents from the given URL.
+        Creates a tree from the HTML contents from the given HTML data for use
+        in the parsing of the HTML data.
 
         :param self: the parser object
-        :param schedule: the schedule to get the schedule URL from
-        :raises: ParserError
+        :param schedule: the bytes of HTML data
         """
-        if type(self.schedule) is not Schedule:
-            raise ParserError("invalid type for schedule")
-
-        session = requests.Session()
-        session.get(self.schedule.getScheduleURL(False))
-
-        result = session.get(self.schedule.getScheduleURL(True))
-
-        # Raise an exception if the request failed.
-        result.raise_for_status()
-
-        tree = html.fromstring(result.content)
+        tree = html.fromstring(data)
         self.elements = tree.xpath(QUERY_RESULT)
 
     def parse(self):
         """
-        Takes the tree from the given URL and finds the lectures, sections, and
+        Takes the tree from loaded data, then finds the lectures, sections, and
         final times.
 
         :param self: the parser object
@@ -65,11 +49,12 @@ class Parser:
         """
         schedule = {}
         course = None
+        courseInfo = None
         courseCode = ""
         courseNum = 0
 
-        if type(self.schedule) is not Schedule:
-            raise ParserError("invalid type for schedule")
+        if not self.elements:
+            raise ParserError("no data loaded for parsing")
 
         for element in self.elements:
             if element.tag == "h2":
@@ -80,14 +65,19 @@ class Parser:
                     courseCode = match.group(1)
             elif (element.tag == "tr" and len(element) == LEN_HEADER and
                   courseCode):
+                if (course and course in schedule and courseInfo is not None and
+                    len(courseInfo) > 0):
+                    schedule[course].append(courseInfo)
+
                 # Set the course number if it was found in the course header.
                 course = (courseCode + " "
                           + element[HEADER_NUM].text_content().strip())
-            elif course is not None and len(element) == LEN_MEETING:
-                # Add a meeting if one was found and a course has been set.
-                if course not in schedule:
-                    schedule[course] = {}
 
+                if course not in schedule:
+                    schedule[course] = []
+
+                courseInfo = {}
+            elif courseInfo is not None and len(element) == LEN_MEETING:
                 # Get the parts of the meeting.
                 sectionID = element[INDEX_ID].text_content().strip()
                 meetingType = element[INDEX_TYPE].text_content().strip()
@@ -95,12 +85,13 @@ class Parser:
                 days = element[INDEX_DAYS].text_content().strip()
                 times = element[INDEX_TIMES].text_content().strip()
                 building = element[INDEX_BUILDING].text_content().strip()
-                room = element[INDEX_BUILDING].text_content().strip()
+                room = element[INDEX_ROOM].text_content().strip()
                 instructor = element[INDEX_INSTR].text_content().strip()
 
-                # If the meeting is a final, add it in a special format.
+                # If the meeting is a final, then add it to the course in its
+                # own format instead of a list, since a list is not needed.
                 if meetingType == "FI":
-                    schedule[course]["FI"] = {
+                    courseInfo["FI"] = {
                         "date": section,
                         "day": days,
                         "times": times,
@@ -110,17 +101,31 @@ class Parser:
 
                     continue
 
-                # Otherwise, add the meeting normally.
-                if meetingType not in schedule[course]:
-                    schedule[course][meetingType] = []
 
-                schedule[course][meetingType].append({
+                # Otherwise, add the meeting normally.
+                meeting = {
                     "sectionID": sectionID,
                     "days": days,
                     "times": times,
                     "building": building,
                     "room": room,
                     "instructor": instructor
-                })
+                }
+
+                if meetingType == "LE":
+                    # If the meeting is a lecture, there is no need to make it a
+                    # part of a list since there is only 1 lecture.
+                    courseInfo["LE"] = meeting
+                else:
+                    # But other sections can have multiples, so a list is
+                    # needed.
+                    if meetingType not in courseInfo:
+                        courseInfo[meetingType] = []
+
+                    courseInfo[meetingType].append(meeting)
+
+        # Add any leftover course.
+        if courseInfo is not None and len(courseInfo) > 0:
+            schedule[course].append(courseInfo)
 
         return schedule
