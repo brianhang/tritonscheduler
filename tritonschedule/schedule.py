@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from .parser import Parser
+from parser import Parser
 
 import re
 import requests
@@ -11,6 +11,7 @@ BASE_URL_PRINT = "https://act.ucsd.edu/scheduleOfClasses/scheduleOfClasses" \
                   "FacultyResultPrint.htm?tabNum=tabs-crs"
 
 REGEX_TERM = "([A-Z][0-9A-Z])(\d\d)"
+REGEX_COURSE = "([A-Z][A-Z][A-Z]*[A-Z]*\s\w+)"
 
 NEW_LINE = "%0D%0A"
 VALID_TERMS = set(["FA", "WI", "SU", "SP", "SA", "S3", "S2", "S1"])
@@ -25,7 +26,6 @@ class Schedule(object):
         Checks whether or not a given term code is in the format of a two letter
         valid season followed by a two digit year.
 
-        :param self: the schedule object
         :param newTerm: the term code to check
         :returns: True if the given term is valid, False otherwise
         """
@@ -36,6 +36,20 @@ class Schedule(object):
             return False
 
         return (match.group(1) in VALID_TERMS)
+
+    @staticmethod
+    def validateCourse(course):
+        """
+        Checks whether or not a given course code is in the valid format of the
+        department followed by the course number.
+
+        :param course: the course code to check
+        :returns: True if the course code is valid, False otherwise
+        """
+        course = course.upper()
+        match = re.match(REGEX_COURSE, course)
+
+        return match is not None
 
     def getScheduleURL(self, forPrinting = False):
         """
