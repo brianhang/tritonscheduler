@@ -1,5 +1,11 @@
-import pprint
 import itertools
+
+from random import uniform
+from random import randint
+from classtime import ClassTime
+
+class AlgorithmError(Exception):
+    pass
 
 class Algorithm:
     def __init__(self, schedule):
@@ -8,6 +14,7 @@ class Algorithm:
         output into chromosomes for individuals.
         """
         self.chromosomes = {}
+        self.schedule = schedule
 
         # Get all the possible alleles, which would be a specific lecture and
         # section(s) for a course.
@@ -42,47 +49,184 @@ class Algorithm:
                 else:
                     self.chromosomes[code].append({"LE": index})
 
-    def initiate(self):
+    def getFitness(self, individual):
+        """
+        Calculates the fitness of an individual by adding points for certain
+        factors. This includes: having no conflicts.
+
+        :param self: the Algorithm object
+        :param individual: the individual to calculate the fitness for
+        :returns: the fitness value of the individual
+        """
+        fitness = 0
+        schedule = self.schedule
+
+        earliestTime = ClassTime.fromString("MTuWThFS 12:00a-8:00a")
+        latestTime = ClassTime.fromString("MTuWThFS 6:00p-11:59p")
+
+        # Sum the fitness for each section.
+        for course, meetings in individual.items():
+            for meetingType, meeting in meetings.items():
+                if meetingType == "FI":
+                    continue
+
+                index = meetings["LE"]
+                item = schedule[course][index][meetingType]
+
+                if meetingType != "LE" and meetingType != "FI":
+                    item = item[meeting]
+
+                # Check for no conflicts.
+                for course2, meetings2 in individual.items():
+                    for meetingType2, meeting2 in meetings2.items():
+                        if meetingType2 == "FI":
+                            continue
+
+                        index2 = meetings2["LE"]
+                        item2 = schedule[course2][index2][meetingType2]
+
+                        if meetingType2 != "LE":
+                            item2 = item2[meeting2]
+
+                        if not item["time"].conflictsWith(item2["time"]):
+                            fitness += 1
+                        else:
+                            fitness -= 2
+
+                # Check for too early class.
+                if item["time"].isTimeAfter(earliestTime):
+                    fitness += 1
+
+                # Check for too late class.
+                if item["time"].isTimeBefore(latestTime):
+                    fitness += 1
+
+        return fitness
+
+    def initiate(self, size, crossoverRate, mutateRate):
         """
         Creates an initial, random population so the genetic algorithm has a
         base to start from.
-        """
-        pass
 
-    def select(self):
+        :param self: the Algorithm object
+        :param size: the population size
+        """
+        self.capacity = size
+        self.crossoverRate = crossoverRate
+        self.mutateRate = mutateRate
+        self.population = []
+
+        # Keep adding random individuals until the population is full.
+        while len(self.population) < self.capacity:
+            individual = {}
+
+            for locus, genes in self.chromosomes.items():
+                index = randint(0, len(genes) - 1)
+                individual[locus] = self.chromosomes[locus][index]
+
+            self.population.append(individual)
+
+        # Get fitness information for the current generation.
+        self.calculateFitness()
+
+    def calculateFitness(self):
+        """
+        Sorts the current population by fitness (least to greatest) and then
+        calculates the fitness for each individual and the sum of the fitness
+        values for the population.
+
+        :param self: the Algorithm object
+        """
+        # Sort the population by fitness.
+        self.population = sorted(self.population, key=lambda x:
+                                 self.getFitness(x))
+
+        # Calculate the fitnesses of the population.
+        self.fitness = [0] * len(self.population)
+        self.fitnessSum = 0
+        
+        for i in range(len(self.population)):
+            self.fitness[i] = self.getFitness(self.population[i])
+            self.fitnessSum += self.fitness[i]
+        
+        # Get the total fitness for a fitness proportionate selection.
+        self.fitnessSum = float(self.fitnessSum)
+
+    def evolve(self):
         """
         Picks which members of the population will not be discarded for the next
         generation by finding the fittest individuals.
         """
-        pass
+        # Select parents using fitness proportionate selection.
+        def select():
+            previousProb = 0.0
 
-    def crossover(self):
+            for i in range(len(self.population)):
+                chance = previousProb + float(self.fitness[i]) / self.fitnessSum
+                previousProb = chance
+
+                if uniform(0.0, 1.0) <= chance:
+                    return self.population[i]
+
+        # Keep the most fit individual for the next generation.
+        nextGeneration = [self.population[-1]]
+
+        # Fill the next generation with offspring of selected parents.
+        while len(nextGeneration) < self.capacity:
+            parent1 = select()
+            parent2 = select()
+
+            nextGeneration.append(crossover(parent1, parent2))
+
+        # Add some diversity to the next generation with random mutation.
+        for individual in self.population:
+            mutate(individual)
+
+        # Make the next generation become the current generation.
+        self.population = nextGeneration
+
+        # Get fitness information for the current generation.
+        self.calculateFitness()
+            
+    def crossover(self, parent1, parent2):
         """
         After selection occurs, parents will be chosen from remaining population
         and children will be created by crossing the genes at certain points.
         """
-        pass
+        child = {}
 
-    def mutate(self):
+        # Copy genes from either the first parent or second parent.
+        # Shallow copy is used here since the values are just numbers.
+        for chromosome in parent1:
+            if uniform(0.0, 1.0) < self.crossoverRate:
+                child[chromosome] = parent2[chromosome].copy()
+            else:
+                child[chromosome] = parent1[chromosome].copy()
+
+        return child
+
+    def mutate(self, individual):
         """
         Picks random individuals in the population and mutates their genes to
         provide some additional genetic diversity.
         """
-
-    def evolve(self):
-        """
-        Increments the generation and performs selection of fit individuals,
-        reproduction of fit individuals, and random mutation.
-        """
-        pass
+        for chromosome, gene in individual.items():
+            if uniform(0.0, 1.0) < self.mutateRate:
+                pool = self.chromosome[chromosome]
+                individual[chromosome] = pool[randint(0, len(pool) - 1)]
 
     def getHighestFitness(self):
         """
         Returns the fitness value of the most fit individual in the population.
         """
+        if self.fitness:
+            return self.fitness[len(self.fitness) - 1]
+
+        return 0
 
     def getTotalFitness(self):
         """
         Returns the sum of all of the fitness values of individuals in the
         population.
         """
+        return self.fitnessSum or 0

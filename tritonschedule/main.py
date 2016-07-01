@@ -4,6 +4,8 @@ from schedule import Schedule
 from parser import ParserError
 from algorithm import Algorithm
 
+import pprint
+
 DEBUG = True
 
 def handleInput(info):
@@ -56,9 +58,35 @@ def handleInput(info):
 
         return True
 
+    # Get the desired population size.
+    size = 0
+
+    try:
+        size = int(input("Enter your desired population size: "))
+
+        if size <= 0:
+            print("You must enter a positive number.")
+
+            raise ValueError()
+    except ValueError:
+        while True:
+            try:
+                size = int(input("You have entered an invalid size, " \
+                                 "try again: "))
+
+                if size <= 0:
+                    print("You must enter a positive number.")
+                else:
+                    break
+            except ValueError:
+                continue
+            except:
+                return True
+
     # Send the user input to the main function.
     info["term"] = term
     info["courses"] = courses
+    info["size"] = size
 
     return False
 
@@ -73,6 +101,8 @@ def main():
     if DEBUG:
         info["term"] = "FA16"
         info["courses"] = ["CSE 12", "CSE 15L", "DOC 1"]
+        info["size"] = 100
+        info["gen"] = 50
     elif handleInput(info):
         return
 
@@ -102,6 +132,20 @@ def main():
 
     # Initiate the population.
     algorithm = Algorithm(scheduleData)
+    algorithm.initiate(info["size"])
+
+    """
+    pp = pprint.PrettyPrinter(indent = 4)
+    pp.pprint(scheduleData)
+    pp.pprint(algorithm.chromosomes)
+    pp.pprint(algorithm.population)
+
+    # Run the algorithm through the desired number of generations.
+    generation = 0
+
+    while generation < info["gen"]:
+        print("Gen " + generation)
+    """
 
 if __name__ == "__main__":
     main()

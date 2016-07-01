@@ -20,6 +20,7 @@ LEN_MEETING = 9
 HEADER_NUM = 1
 
 from lxml import html
+from classtime import ClassTime
 
 import re
 
@@ -93,8 +94,7 @@ class Parser:
                 if meetingType == "FI":
                     courseInfo["FI"] = {
                         "date": section,
-                        "day": days,
-                        "times": times,
+                        "time": ClassTime.fromString(days + " " + times),
                         "building": building,
                         "room": room
                     }    
@@ -105,8 +105,7 @@ class Parser:
                 # Otherwise, add the meeting normally.
                 meeting = {
                     "sectionID": sectionID,
-                    "days": days,
-                    "times": times,
+                    "time": ClassTime.fromString(days + " " + times),
                     "building": building,
                     "room": room,
                     "instructor": instructor
