@@ -62,36 +62,54 @@ class Algorithm:
         schedule = self.schedule
 
         earliestTime = ClassTime.fromString("MTuWThFS 12:00a-8:00a")
-        latestTime = ClassTime.fromString("MTuWThFS 6:00p-11:59p")
+        latestTime = ClassTime.fromString("MTuWThFS 4:30p-11:59p")
+        lunch = ClassTime.fromString("MTuWThFS 12:00p-1:00p")
 
         # Sum the fitness for each section.
         for course, meetings in individual.items():
+            index = meetings["LE"]
+            meetingInfo = schedule[course][index]
+            final = None
+
+            if "FI" in meetingInfo:
+                final = meetingInfo["FI"]["time"]
+
             for meetingType, meeting in meetings.items():
-                if meetingType == "FI":
-                    continue
+                item = meetingInfo[meetingType]
 
-                index = meetings["LE"]
-                item = schedule[course][index][meetingType]
-
-                if meetingType != "LE" and meetingType != "FI":
+                if meetingType != "LE":
                     item = item[meeting]
 
                 # Check for no conflicts.
                 for course2, meetings2 in individual.items():
                     for meetingType2, meeting2 in meetings2.items():
-                        if meetingType2 == "FI":
-                            continue
-
                         index2 = meetings2["LE"]
-                        item2 = schedule[course2][index2][meetingType2]
+
+                        meetingInfo2 = schedule[course2][index2]
+                        item2 = meetingInfo2[meetingType2]
 
                         if meetingType2 != "LE":
                             item2 = item2[meeting2]
 
+                        # Check for no time conflicts.
                         if not item["time"].conflictsWith(item2["time"]):
                             fitness += 1
                         else:
                             fitness -= 2
+
+                        # Check for no finals conflicts.
+                        if final is not None and "FI" in meetingInfo2:
+                            final2 = meetingInfo2["FI"]["time"]
+
+                            if not final.conflictsWith(final2):
+                                fitness += 1
+
+                                if final.isOnDay(final2.days):
+                                    fitness -= 1
+                                else:
+                                    fitness += 1
+                            else:
+                                fitness -= 5
 
                 # Check for too early class.
                 if item["time"].isTimeAfter(earliestTime):
@@ -101,9 +119,20 @@ class Algorithm:
                 if item["time"].isTimeBefore(latestTime):
                     fitness += 1
 
+                # Check for lunch break.
+                if not item["time"].conflictsWith(lunch):
+                    fitness += 1
+
+            if final is not None:
+                if final.isTimeAfter(earliestTime):
+                    fitness += 1
+
+                if final.isTimeBefore(latestTime):
+                    fitness += 1
+
         return fitness
 
-    def initiate(self, size, crossoverRate, mutateRate):
+    def initiate(self, size, crossoverRate, mutateRate, elitism):
         """
         Creates an initial, random population so the genetic algorithm has a
         base to start from.
@@ -114,6 +143,7 @@ class Algorithm:
         self.capacity = size
         self.crossoverRate = crossoverRate
         self.mutateRate = mutateRate
+        self.elitism = elitism
         self.population = []
 
         # Keep adding random individuals until the population is full.
@@ -169,18 +199,21 @@ class Algorithm:
                     return self.population[i]
 
         # Keep the most fit individual for the next generation.
-        nextGeneration = [self.population[-1]]
+        nextGeneration = []
+
+        for i in range(int(self.capacity * self.elitism)):
+            nextGeneration.append(self.population[-(i + 1)])
 
         # Fill the next generation with offspring of selected parents.
         while len(nextGeneration) < self.capacity:
             parent1 = select()
             parent2 = select()
 
-            nextGeneration.append(crossover(parent1, parent2))
+            nextGeneration.append(self.crossover(parent1, parent2))
 
         # Add some diversity to the next generation with random mutation.
         for individual in self.population:
-            mutate(individual)
+            self.mutate(individual)
 
         # Make the next generation become the current generation.
         self.population = nextGeneration
@@ -212,7 +245,7 @@ class Algorithm:
         """
         for chromosome, gene in individual.items():
             if uniform(0.0, 1.0) < self.mutateRate:
-                pool = self.chromosome[chromosome]
+                pool = self.chromosomes[chromosome]
                 individual[chromosome] = pool[randint(0, len(pool) - 1)]
 
     def getHighestFitness(self):
@@ -230,3 +263,26 @@ class Algorithm:
         population.
         """
         return self.fitnessSum or 0
+
+    def printFittest(self):
+        fittest = self.population[len(self.population) - 1]
+
+        for courseCode, info in fittest.items():
+            courseIndex = info["LE"]
+            course = self.schedule[courseCode][courseIndex]
+
+            print(courseCode + ":")
+
+            for meetingType, index in info.items():
+                meeting = course[meetingType]
+                time = "N/A"
+
+                if meetingType != "LE":
+                    time = meeting[index]["time"]
+                else:
+                    time = meeting["time"]
+
+                print("\t" + meetingType + ": " + str(time))
+
+            if "FI" in course:
+                print("\tFI: " + str(course["FI"]["time"]))

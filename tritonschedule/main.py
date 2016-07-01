@@ -3,6 +3,7 @@
 from schedule import Schedule
 from parser import ParserError
 from algorithm import Algorithm
+from time import sleep
 
 import pprint
 
@@ -100,9 +101,12 @@ def main():
     # Get the desired term and courses.
     if DEBUG:
         info["term"] = "FA16"
-        info["courses"] = ["CSE 12", "CSE 15L", "DOC 1"]
+        info["courses"] = ["VIS 1", "CSE 12", "CSE 15L", "DOC 1"]
         info["size"] = 100
-        info["gen"] = 50
+        info["gen"] = 100
+        info["crossover"] = 0.5
+        info["mutate"] = 0.01
+        info["elitism"] = 0.1
     elif handleInput(info):
         return
 
@@ -132,20 +136,20 @@ def main():
 
     # Initiate the population.
     algorithm = Algorithm(scheduleData)
-    algorithm.initiate(info["size"])
-
-    """
-    pp = pprint.PrettyPrinter(indent = 4)
-    pp.pprint(scheduleData)
-    pp.pprint(algorithm.chromosomes)
-    pp.pprint(algorithm.population)
+    algorithm.initiate(info["size"], info["crossover"], info["mutate"],
+                       info["elitism"])
 
     # Run the algorithm through the desired number of generations.
     generation = 0
 
     while generation < info["gen"]:
-        print("Gen " + generation)
-    """
+        print("Generation " + str(generation + 1) + " Total Fitness: "
+              + str(algorithm.getTotalFitness()))
+
+        algorithm.evolve()
+        generation += 1
+
+    algorithm.printFittest()
 
 if __name__ == "__main__":
     main()
