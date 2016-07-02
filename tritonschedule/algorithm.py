@@ -1,3 +1,5 @@
+# TODO: Fix fitness going down
+
 import itertools
 
 from random import uniform
@@ -65,6 +67,8 @@ class Algorithm:
         latestTime = ClassTime.fromString("MTuWThFS 4:30p-11:59p")
         lunch = ClassTime.fromString("MTuWThFS 12:00p-1:00p")
 
+        maxGap = 60 * 4
+
         # Sum the fitness for each section.
         for course, meetings in individual.items():
             index = meetings["LE"]
@@ -110,6 +114,12 @@ class Algorithm:
                                     fitness += 1
                             else:
                                 fitness -= 5
+
+                        # Check for large schedule gaps.
+                        if item["time"].isOnDay(item2["time"].days):
+                            if (abs(item["time"].startTime
+                                    - item2["time"].startTime) <= maxGap):
+                                fitness += 1
 
                 # Check for too early class.
                 if item["time"].isTimeAfter(earliestTime):
@@ -231,7 +241,7 @@ class Algorithm:
         # Copy genes from either the first parent or second parent.
         # Shallow copy is used here since the values are just numbers.
         for chromosome in parent1:
-            if uniform(0.0, 1.0) < self.crossoverRate:
+            if uniform(0.0, 1.0) <= self.crossoverRate:
                 child[chromosome] = parent2[chromosome].copy()
             else:
                 child[chromosome] = parent1[chromosome].copy()
@@ -244,7 +254,7 @@ class Algorithm:
         provide some additional genetic diversity.
         """
         for chromosome, gene in individual.items():
-            if uniform(0.0, 1.0) < self.mutateRate:
+            if uniform(0.0, 1.0) <= self.mutateRate:
                 pool = self.chromosomes[chromosome]
                 individual[chromosome] = pool[randint(0, len(pool) - 1)]
 
