@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 from schedule import Schedule
-from parser import ParserError
+from classparser import ClassParserError
 from algorithm import Algorithm
 from time import sleep
 
@@ -97,7 +97,7 @@ def main():
 
     try:
         scheduleData = schedule.retrieve()
-    except ParserError: 
+    except ClassParserError: 
         print("The Schedule of Classes data could not be loaded at this " \
               "or you have provided an invalid class.")
 

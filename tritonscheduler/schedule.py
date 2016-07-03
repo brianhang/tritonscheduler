@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from parser import Parser
+from classparser import ClassParser
 
 import re
 import requests
@@ -33,7 +33,7 @@ class Schedule(object):
     """
     The Schedule class is responsible for handling input for a schedule and
     loading the corresponding schedule data. It also delegates the parsing of
-    schedule data to the Parser class.
+    schedule data to the ClassParser class.
 
     :ivar courses: a list of course codes for desired courses
     :ivar term: which term to search in (two uppercase letters and 2 digit year)
@@ -122,7 +122,7 @@ class Schedule(object):
         # Raise an exception if the request failed.
         result.raise_for_status()
 
-        parser = Parser()
+        parser = ClassParser()
         parser.load(result.content)
 
         return parser.parse()

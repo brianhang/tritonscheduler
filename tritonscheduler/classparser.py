@@ -28,16 +28,16 @@ LEN_HEADER = 4
 # The number of columns for a course meeting.
 LEN_MEETING = 9
 
-class ParserError(Exception):
+class ClassParserError(Exception):
     """
-    An exception that is thrown from the Parser class.
+    An exception that is thrown from the ClassParser class.
     """
     pass
 
-class Parser(object):
+class ClassParser(object):
     """
-    The Parser class scrapes data from the UCSD Schedule of Classes and turns
-    the found data into a usable format.
+    The ClassParser class scrapes data from the UCSD Schedule of Classes and
+    turns the found data into a usable format.
 
     :ivar elements: important HTML elements for scraping data
     """
@@ -59,7 +59,7 @@ class Parser(object):
         final times.
 
         :param self: the parser object
-        :raises: ParserError
+        :raises: ClassParserError
         :returns: the list of lectures and sections found
         """
         schedule = {}
@@ -69,7 +69,7 @@ class Parser(object):
         courseNum = 0
 
         if not self.elements:
-            raise ParserError("no data loaded for parsing")
+            raise ClassParserError("no data loaded for parsing")
 
         for element in self.elements:
             if element.tag == "h2":

@@ -2,5 +2,8 @@ init:
 	pip install -r requirements.txt
 
 test:
-	python tests/test_classtime.py
-	python tests/test_schedule.py
+	python -m unittest tests/test_classtime.py
+	python -m unittest tests/test_schedule.py
+
+run:
+	@python tritonscheduler/main.py

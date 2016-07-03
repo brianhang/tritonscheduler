@@ -1,11 +1,8 @@
 #!/usr/bin/env python
 
-import os
-import sys
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
 import unittest
-from tritonscheduler.classtime import ClassTime
+
+from classtime import ClassTime
 
 class ClassTimeTest(unittest.TestCase):
     def testFromString(self):
