@@ -4,7 +4,7 @@ TritonScheduler is a schedule for UCSD students. The schedule data is found usin
 Note that this is still a work-in-progress.
 
 ## Installation
-The dependencies ((Requests)[https://github.com/kennethreitz/requests] and (lxml)[https://github.com/lxml/lxml]) can be simply installed by typing `make`.
+The dependencies ([Requests](https://github.com/kennethreitz/requests) and [lxml](https://github.com/lxml/lxml)) can be simply installed by typing `make`.
 
 ## Running
 The program can be ran by using `make run`.
