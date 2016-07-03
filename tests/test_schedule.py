@@ -6,8 +6,8 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import unittest
 
-from tritonschedule.schedule import Schedule
-from tritonschedule.schedule import ScheduleError
+from tritonscheduler.schedule import Schedule
+from tritonscheduler.schedule import ScheduleError
 
 class ScheduleTest(unittest.TestCase):
     def setUp(self):
